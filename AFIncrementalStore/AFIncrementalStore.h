@@ -84,6 +84,10 @@
  */
 + (NSManagedObjectModel *)model;
 
+
+- (NSManagedObjectID *)objectIDForEntity:(NSEntityDescription *)entity
+                  withResourceIdentifier:(NSString *)resourceIdentifier;
+
 ///-----------------------
 /// @name Optional Methods
 ///-----------------------
