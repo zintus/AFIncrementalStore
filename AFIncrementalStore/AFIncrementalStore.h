@@ -88,6 +88,9 @@
 - (NSManagedObjectID *)objectIDForEntity:(NSEntityDescription *)entity
                   withResourceIdentifier:(NSString *)resourceIdentifier;
 
+- (NSManagedObjectID *)objectIDForBackingObjectForEntity:(NSEntityDescription *)entity
+                withResourceIdentifier:(NSString *)resourceIdentifier
+
 ///-----------------------
 /// @name Optional Methods
 ///-----------------------
