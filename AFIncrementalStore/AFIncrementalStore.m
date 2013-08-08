@@ -442,6 +442,14 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
                         }];
 
                         [self notifyManagedObjectContext:context aboutRequestOperation:operation forFetchRequest:fetchRequest fetchedObjectIDs:[managedObjects valueForKeyPath:@"objectID"]];
+                        
+                        void (^block)(NSArray* arr) = [fetchRequest valueForKey:@"remoteSuccess"];
+                        if (block)
+                        {
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                block(backingObjects);
+                            });
+                        }
                     }];
                 }];
             }];
@@ -449,6 +457,14 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
             NSLog(@"Error: %@", error);
             [[NSNotificationCenter defaultCenter] postNotificationName:AFIncrementalStoreError object:nil userInfo:@{@"error" : error}];
             [self notifyManagedObjectContext:context aboutRequestOperation:operation forFetchRequest:fetchRequest fetchedObjectIDs:nil];
+            
+            void (^block)(NSString* failReason) = [fetchRequest valueForKey:@"error"];
+            if (block)
+            {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    block([error localizedDescription]);
+                });
+            }
         }];
 
         [self notifyManagedObjectContext:context aboutRequestOperation:operation forFetchRequest:fetchRequest fetchedObjectIDs:nil];
@@ -458,6 +474,18 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
     NSManagedObjectContext *backingContext = [self backingManagedObjectContext];
 	NSFetchRequest *backingFetchRequest = [fetchRequest copy];
 	backingFetchRequest.entity = [NSEntityDescription entityForName:fetchRequest.entityName inManagedObjectContext:backingContext];
+    
+    void (^block)(NSArray* entities) = [fetchRequest valueForKey:@"localSuccess"];
+    NSArray* (^runCallback)(NSArray* entities) = ^(NSArray* entities)
+    {
+        if (block)
+        {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                block(entities);
+            });
+        }
+        return entities;
+    };
 
     switch (fetchRequest.resultType) {
         case NSManagedObjectResultType: {
@@ -472,8 +500,8 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
                 object.af_resourceIdentifier = resourceIdentifier;
                 [mutableObjects addObject:object];
             }
-            
-            return mutableObjects;
+        
+            return runCallback(mutableObjects);
         }
         case NSManagedObjectIDResultType: {
             NSArray *backingObjectIDs = [backingContext executeFetchRequest:backingFetchRequest error:error];
@@ -485,13 +513,13 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
                 [managedObjectIDs addObject:[self objectIDForEntity:fetchRequest.entity withResourceIdentifier:resourceID]];
             }
             
-            return managedObjectIDs;
+            return runCallback(managedObjectIDs);
         }
         case NSDictionaryResultType:
         case NSCountResultType:
-            return [backingContext executeFetchRequest:backingFetchRequest error:error];
+            return runCallback([backingContext executeFetchRequest:backingFetchRequest error:error]);
         default:
-            return nil;
+            return runCallback(nil);
     }
 }
 
