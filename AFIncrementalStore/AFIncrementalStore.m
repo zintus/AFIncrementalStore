@@ -495,8 +495,8 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
 
             NSMutableArray *mutableObjects = [NSMutableArray arrayWithCapacity:[results count]];
             for (NSString *resourceIdentifier in [results valueForKeyPath:kAFIncrementalStoreResourceIdentifierAttributeName]) {
-                NSManagedObjectID *objectID = [self objectIDForEntity:fetchRequest.entity withResourceIdentifier:resourceIdentifier];
-                NSManagedObject *object = [context objectWithID:objectID];
+                NSManagedObjectID *objectID = [self objectIDForBackingObjectForEntity:fetchRequest.entity withResourceIdentifier:resourceIdentifier];
+                NSManagedObject *object = [backingContext objectWithID:objectID];
                 object.af_resourceIdentifier = resourceIdentifier;
                 [mutableObjects addObject:object];
             }
@@ -505,15 +505,15 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
         }
         case NSManagedObjectIDResultType: {
             NSArray *backingObjectIDs = [backingContext executeFetchRequest:backingFetchRequest error:error];
-            NSMutableArray *managedObjectIDs = [NSMutableArray arrayWithCapacity:[backingObjectIDs count]];
+//            NSMutableArray *managedObjectIDs = [NSMutableArray arrayWithCapacity:[backingObjectIDs count]];
+//            
+//            for (NSManagedObjectID *backingObjectID in backingObjectIDs) {
+//                NSManagedObject *backingObject = [backingContext objectWithID:backingObjectID];
+//                NSString *resourceID = [backingObject valueForKey:kAFIncrementalStoreResourceIdentifierAttributeName];
+//                [managedObjectIDs addObject:[self objectIDForEntity:fetchRequest.entity withResourceIdentifier:resourceID]];
+//            }
             
-            for (NSManagedObjectID *backingObjectID in backingObjectIDs) {
-                NSManagedObject *backingObject = [backingContext objectWithID:backingObjectID];
-                NSString *resourceID = [backingObject valueForKey:kAFIncrementalStoreResourceIdentifierAttributeName];
-                [managedObjectIDs addObject:[self objectIDForEntity:fetchRequest.entity withResourceIdentifier:resourceID]];
-            }
-            
-            return runCallback(managedObjectIDs);
+            return runCallback(backingObjectIDs);
         }
         case NSDictionaryResultType:
         case NSCountResultType:
